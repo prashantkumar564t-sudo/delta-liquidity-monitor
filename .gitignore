@@ -1,0 +1,37 @@
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Runtime data
+data/raw/*
+data/analysis/*
+logs/*
+
+# Keep folder structure
+!data/raw/.gitkeep
+!data/analysis/.gitkeep
+!logs/.gitkeep
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# IDE settings
+.vscode/
+.idea/
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
