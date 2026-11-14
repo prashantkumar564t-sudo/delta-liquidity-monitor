@@ -155,6 +155,7 @@ class SQLiteStorage:
 
         self._snapshot_buffer = []
         self._execution_buffer = []
+        self._expiry_vol_buffer = []
 
         self._conn = sqlite3.connect(str(self.db_path))
         self._init_db()
@@ -215,6 +216,31 @@ class SQLiteStorage:
                 levels_used INTEGER NOT NULL,
                 queue_depth_ahead INTEGER,
                 PRIMARY KEY (symbol, timestamp_us, side, order_type)
+            );
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS expiry_liquidity_vol (
+                underlying TEXT NOT NULL,
+                expiry_bucket TEXT NOT NULL,
+                expiry_date TEXT NOT NULL,
+                timestamp_us INTEGER NOT NULL,
+                timestamp_utc TEXT NOT NULL,
+                spot_price TEXT NOT NULL,
+                atm_strike TEXT NOT NULL,
+                atm_iv_mean TEXT NOT NULL,
+                straddle_premium_usd TEXT NOT NULL,
+                expected_move_pct TEXT NOT NULL,
+                total_ce_bid_lots INTEGER NOT NULL,
+                total_ce_ask_lots INTEGER NOT NULL,
+                total_pe_bid_lots INTEGER NOT NULL,
+                total_pe_ask_lots INTEGER NOT NULL,
+                lot_imbalance TEXT NOT NULL,
+                futures_rv_pct TEXT NOT NULL,
+                futures_top_lots INTEGER NOT NULL,
+                PRIMARY KEY (underlying, expiry_bucket, timestamp_us)
             );
             """
         )
@@ -294,9 +320,57 @@ class SQLiteStorage:
         if len(self._snapshot_buffer) >= self.batch_size:
             self.flush()
 
+    def write_expiry_liquidity_vol(
+        self,
+        underlying: str,
+        expiry_bucket: str,
+        expiry_date: str,
+        spot_price: Decimal,
+        atm_strike: Decimal,
+        atm_iv_mean: Decimal,
+        straddle_premium_usd: Decimal,
+        expected_move_pct: Decimal,
+        total_ce_bid_lots: int,
+        total_ce_ask_lots: int,
+        total_pe_bid_lots: int,
+        total_pe_ask_lots: int,
+        lot_imbalance: Decimal,
+        futures_rv_pct: Decimal,
+        futures_top_lots: int,
+        timestamp_utc: str = None,
+        timestamp_us: int = None,
+    ):
+        """Buffer options volatility and lot liquidity metrics by expiry bucket."""
+        now_utc = timestamp_utc or datetime.now(timezone.utc).isoformat()
+        now_us = timestamp_us if timestamp_us is not None else int(time.time() * 1_000_000)
+
+        row = (
+            underlying,
+            expiry_bucket,
+            expiry_date,
+            now_us,
+            now_utc,
+            self._to_text(spot_price),
+            self._to_text(atm_strike),
+            self._to_text(atm_iv_mean),
+            self._to_text(straddle_premium_usd),
+            self._to_text(expected_move_pct),
+            int(total_ce_bid_lots),
+            int(total_ce_ask_lots),
+            int(total_pe_bid_lots),
+            int(total_pe_ask_lots),
+            self._to_text(lot_imbalance),
+            self._to_text(futures_rv_pct),
+            int(futures_top_lots),
+        )
+        self._expiry_vol_buffer.append(row)
+
+        if len(self._expiry_vol_buffer) >= self.batch_size:
+            self.flush()
+
     def flush(self):
         """Execute batched executemany insert with transaction commit."""
-        if not self._snapshot_buffer and not self._execution_buffer:
+        if not self._snapshot_buffer and not self._execution_buffer and not self._expiry_vol_buffer:
             return
 
         cursor = self._conn.cursor()
@@ -329,6 +403,20 @@ class SQLiteStorage:
                 self._execution_buffer
             )
             self._execution_buffer.clear()
+
+        if self._expiry_vol_buffer:
+            cursor.executemany(
+                """
+                INSERT OR IGNORE INTO expiry_liquidity_vol (
+                    underlying, expiry_bucket, expiry_date, timestamp_us, timestamp_utc,
+                    spot_price, atm_strike, atm_iv_mean, straddle_premium_usd, expected_move_pct,
+                    total_ce_bid_lots, total_ce_ask_lots, total_pe_bid_lots, total_pe_ask_lots,
+                    lot_imbalance, futures_rv_pct, futures_top_lots
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """,
+                self._expiry_vol_buffer
+            )
+            self._expiry_vol_buffer.clear()
 
         self._conn.commit()
 

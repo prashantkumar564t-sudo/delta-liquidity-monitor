@@ -154,6 +154,53 @@ class TestSQLiteStorage(unittest.TestCase):
         )
         self.assertEqual(len(self.storage._snapshot_buffer), 0)
 
+    def test_write_and_read_expiry_liquidity_vol(self):
+        ts_us = 1794650000000000
+        self.storage.write_expiry_liquidity_vol(
+            underlying="BTC",
+            expiry_bucket="0-DTE",
+            expiry_date="141126",
+            spot_price=Decimal("67400.50"),
+            atm_strike=Decimal("67400.00"),
+            atm_iv_mean=Decimal("0.6250"),
+            straddle_premium_usd=Decimal("1250.00"),
+            expected_move_pct=Decimal("1.8546"),
+            total_ce_bid_lots=12000,
+            total_ce_ask_lots=8500,
+            total_pe_bid_lots=15000,
+            total_pe_ask_lots=11000,
+            lot_imbalance=Decimal("0.1600"),
+            futures_rv_pct=Decimal("42.50"),
+            futures_top_lots=4500,
+            timestamp_utc="2026-11-14T10:00:00Z",
+            timestamp_us=ts_us
+        )
+        self.storage.flush()
+
+        conn = sqlite3.connect(str(self.db_path))
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT underlying, expiry_bucket, spot_price, atm_strike, atm_iv_mean,
+                   straddle_premium_usd, expected_move_pct, total_ce_bid_lots, futures_rv_pct
+            FROM expiry_liquidity_vol
+            WHERE timestamp_us = ?;
+            """,
+            (ts_us,)
+        )
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(row[0], "BTC")
+        self.assertEqual(row[1], "0-DTE")
+        self.assertEqual(Decimal(row[2]), Decimal("67400.50"))
+        self.assertEqual(Decimal(row[3]), Decimal("67400.00"))
+        self.assertEqual(Decimal(row[4]), Decimal("0.6250"))
+        self.assertEqual(Decimal(row[5]), Decimal("1250.00"))
+        self.assertEqual(Decimal(row[6]), Decimal("1.8546"))
+        self.assertEqual(row[7], 12000)
+        self.assertEqual(Decimal(row[8]), Decimal("42.50"))
+        conn.close()
+
 
 if __name__ == "__main__":
     unittest.main()
