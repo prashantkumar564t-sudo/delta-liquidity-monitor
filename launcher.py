@@ -1,6 +1,6 @@
 """
 launcher.py
-Launches the collector process and the RAM/Resource monitor concurrently with CLI args.
+Launches the Multi-Instrument Scanner / Collector and the RAM/Resource monitor concurrently with CLI args.
 """
 
 import argparse
@@ -18,10 +18,21 @@ from src import config
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Launch Delta Liquidity Monitor & Profiler with Resource Monitoring"
+        description="Launch Delta Multi-Instrument Scanner & Profiler Coordinator"
     )
     parser.add_argument(
-        "--symbol", default=config.SYMBOL, help=f"Instrument symbol (default: {config.SYMBOL})"
+        "--mode",
+        choices=["chain-scan", "ws", "rest"],
+        default="chain-scan",
+        help="Scanner mode: chain-scan (Perps + 0/1/2-DTE Options) or ws/rest (Single Symbol)",
+    )
+    parser.add_argument(
+        "--underlyings",
+        default="BTC,ETH",
+        help="Comma-separated assets for chain-scan (default: BTC,ETH)",
+    )
+    parser.add_argument(
+        "--symbol", default=config.SYMBOL, help=f"Single-symbol tracking (default: {config.SYMBOL})"
     )
     parser.add_argument(
         "--budget", type=float, default=config.PRIMARY_SIMULATION_USD, help="Simulation budget USD"
@@ -38,9 +49,6 @@ def parse_args():
     parser.add_argument(
         "--sink", choices=["csv", "sqlite", "both"], default="both", help="Storage engine"
     )
-    parser.add_argument(
-        "--mode", choices=["ws", "rest"], default="ws", help="Data ingestion protocol"
-    )
     return parser.parse_args()
 
 
@@ -51,26 +59,27 @@ def main():
     main_script = root_dir / "src" / "main.py"
     monitor_script = root_dir / "monitor" / "ram_monitor.py"
 
-    print("=" * 65)
-    print("Launching Delta Liquidity Monitor & Profiler Coordinator")
-    print(f"Target: {args.symbol} | Duration: {args.duration}s | Sink: {args.sink.upper()} | Mode: {args.mode.upper()}")
-    print("=" * 65)
+    print("=" * 70)
+    print("Launching Delta Multi-Instrument Scanner Coordinator")
+    print(f"Mode: {args.mode.upper()} | Underlyings: {args.underlyings} | Duration: {args.duration}s | Sink: {args.sink.upper()}")
+    print("=" * 70)
 
     collector_cmd = [
         python_exe,
         str(main_script),
+        "--mode", str(args.mode),
+        "--underlyings", str(args.underlyings),
         "--symbol", str(args.symbol),
         "--budget", str(args.budget),
         "--duration", str(args.duration),
         "--interval", str(args.interval),
         "--depth", str(args.depth),
         "--sink", str(args.sink),
-        "--mode", str(args.mode),
     ]
 
     # 1. Start Main Collector
     collector_proc = subprocess.Popen(collector_cmd)
-    print(f"[Launcher] Collector started (PID: {collector_proc.pid})")
+    print(f"[Launcher] Scanner/Collector started (PID: {collector_proc.pid})")
 
     # 2. Start Resource Monitor with collector's PID
     monitor_proc = subprocess.Popen([python_exe, str(monitor_script), str(collector_proc.pid)])
