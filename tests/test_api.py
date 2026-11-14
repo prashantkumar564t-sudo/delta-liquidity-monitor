@@ -76,6 +76,20 @@ class TestDeltaAPI(unittest.TestCase):
         with self.assertRaises(RuntimeError) as ctx:
             self.api.get_product("BTCUSD")
         self.assertIn("429", str(ctx.exception))
+        self.assertGreaterEqual(self.api.last_rtt_ns, 0)
+
+    @patch("urllib.request.urlopen")
+    def test_rtt_latency_tracking(self, mock_urlopen):
+        fake_response = {"success": True, "result": {"symbol": "BTCUSD"}}
+        mock_cm = MagicMock()
+        mock_cm.status = 200
+        mock_cm.read.return_value = json.dumps(fake_response).encode("utf-8")
+        mock_cm.__enter__.return_value = mock_cm
+        mock_urlopen.return_value = mock_cm
+
+        self.api.get_product("BTCUSD")
+        self.assertGreaterEqual(self.api.last_rtt_ns, 0)
+        self.assertGreaterEqual(self.api.last_rtt_ms, 0.0)
 
 
 if __name__ == "__main__":
