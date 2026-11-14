@@ -165,6 +165,7 @@ class SQLiteStorage:
         cursor.execute("PRAGMA journal_mode = WAL;")
         cursor.execute("PRAGMA synchronous = NORMAL;")
         cursor.execute("PRAGMA temp_store = MEMORY;")
+        cursor.execute("PRAGMA cache_size = -2000;")  # 2 MB cache to preserve < 30 MB footprint
 
         cursor.execute(
             """

@@ -329,7 +329,17 @@ class DeltaWebSocketClient:
             asyncio.set_event_loop(self._loop)
             try:
                 self._loop.run_until_complete(self.run())
+            except (RuntimeError, asyncio.CancelledError):
+                pass
             finally:
+                try:
+                    pending = asyncio.all_tasks(self._loop)
+                    for task in pending:
+                        task.cancel()
+                    if pending:
+                        self._loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                except Exception:
+                    pass
                 self._loop.close()
 
         self._thread = threading.Thread(target=_worker, daemon=True)
