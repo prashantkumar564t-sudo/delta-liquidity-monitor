@@ -1,39 +1,82 @@
-
+import io
+import json
+import unittest
+from unittest.mock import patch, MagicMock
+import urllib.error
 from src.delta_api import DeltaAPI
 
 
-def main():
-    api = DeltaAPI(timeout=10)
+class TestDeltaAPI(unittest.TestCase):
+    """Test suite for Delta Exchange REST client with mocked HTTP."""
 
-    print("\nConnecting to Delta Exchange...")
+    def setUp(self):
+        self.api = DeltaAPI(timeout=5)
 
-    try:
-        product = api.get_product("BTCUSD")
-        orderbook = api.get_orderbook("BTCUSD", depth=5)
+    @patch("urllib.request.urlopen")
+    def test_get_product_success(self, mock_urlopen):
+        fake_response = {
+            "success": True,
+            "result": {
+                "symbol": "BTCUSD",
+                "id": 1,
+                "contract_value": "0.001"
+            }
+        }
+        mock_cm = MagicMock()
+        mock_cm.status = 200
+        mock_cm.read.return_value = json.dumps(fake_response).encode("utf-8")
+        mock_cm.__enter__.return_value = mock_cm
+        mock_urlopen.return_value = mock_cm
 
-        print("\nPRODUCT INFORMATION")
-        print("-------------------")
-        print("Symbol:", product.get("symbol"))
-        print("Product ID:", product.get("id"))
-        print("Contract Value:", product.get("contract_value"))
+        result = self.api.get_product("BTCUSD")
+        self.assertEqual(result["symbol"], "BTCUSD")
+        self.assertEqual(result["contract_value"], "0.001")
 
-        print("\nORDER BOOK")
-        print("----------")
+    @patch("urllib.request.urlopen")
+    def test_get_orderbook_success(self, mock_urlopen):
+        fake_response = {
+            "success": True,
+            "result": {
+                "symbol": "BTCUSD",
+                "buy": [{"price": "90000", "size": 10}],
+                "sell": [{"price": "90000.5", "size": 10}]
+            }
+        }
+        mock_cm = MagicMock()
+        mock_cm.status = 200
+        mock_cm.read.return_value = json.dumps(fake_response).encode("utf-8")
+        mock_cm.__enter__.return_value = mock_cm
+        mock_urlopen.return_value = mock_cm
 
-        print("\nBEST BIDS:")
-        for level in orderbook.get("buy", []):
-            print(level)
+        result = self.api.get_orderbook("BTCUSD", depth=5)
+        self.assertIn("buy", result)
+        self.assertIn("sell", result)
+        self.assertEqual(result["buy"][0]["price"], "90000")
 
-        print("\nBEST ASKS:")
-        for level in orderbook.get("sell", []):
-            print(level)
+    @patch("urllib.request.urlopen")
+    def test_api_failure_response(self, mock_urlopen):
+        fake_response = {
+            "success": False,
+            "error": "Symbol not found"
+        }
+        mock_cm = MagicMock()
+        mock_cm.status = 200
+        mock_cm.read.return_value = json.dumps(fake_response).encode("utf-8")
+        mock_cm.__enter__.return_value = mock_cm
+        mock_urlopen.return_value = mock_cm
 
-        print("\nAPI TEST SUCCESSFUL!")
+        with self.assertRaises(RuntimeError):
+            self.api.get_product("INVALID")
 
-    except Exception as error:
-        print("\nAPI TEST FAILED!")
-        print(error)
+    @patch("urllib.request.urlopen")
+    def test_http_error_handling(self, mock_urlopen):
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            url="http://dummy", code=429, msg="Too Many Requests", hdrs={}, fp=io.BytesIO()
+        )
+        with self.assertRaises(RuntimeError) as ctx:
+            self.api.get_product("BTCUSD")
+        self.assertIn("429", str(ctx.exception))
 
 
 if __name__ == "__main__":
-    main()
+    unittest.main()
