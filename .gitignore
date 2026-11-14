@@ -1,4 +1,3 @@
-
 # Python cache
 __pycache__/
 *.py[cod]
@@ -12,6 +11,10 @@ env/
 # Runtime data
 data/raw/*
 data/analysis/*
+data/*.db*
+*.db
+*.db-wal
+*.db-shm
 logs/*
 
 # Keep folder structure
