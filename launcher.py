@@ -22,14 +22,19 @@ def parse_args():
     )
     parser.add_argument(
         "--mode",
-        choices=["chain-scan", "ws", "rest"],
-        default="chain-scan",
-        help="Scanner mode: chain-scan (Perps + 0/1/2-DTE Options) or ws/rest (Single Symbol)",
+        choices=["options-otm", "chain-scan", "multi-perp", "ws", "rest"],
+        default="options-otm",
+        help="Scanner mode: options-otm (OTM Options Scanner), multi-perp (All 5 Perpetuals), chain-scan (Perps + 0/1/2-DTE Options) or ws/rest (Single Symbol)",
+    )
+    parser.add_argument(
+        "--symbols",
+        default="BTCUSD,ETHUSD,SOLUSD,PAXGUSD,SLVONUSD",
+        help="Comma-separated symbols for multi-perp (default: BTCUSD,ETHUSD,SOLUSD,PAXGUSD,SLVONUSD)",
     )
     parser.add_argument(
         "--underlyings",
-        default="BTC,ETH",
-        help="Comma-separated assets for chain-scan (default: BTC,ETH)",
+        default="BTC,ETH,PAXG,XAUT",
+        help="Comma-separated assets for chain-scan / options-otm (default: BTC,ETH,PAXG,XAUT)",
     )
     parser.add_argument(
         "--symbol", default=config.SYMBOL, help=f"Single-symbol tracking (default: {config.SYMBOL})"
@@ -39,6 +44,12 @@ def parse_args():
     )
     parser.add_argument(
         "--duration", type=int, default=config.COLLECTION_DURATION, help="Run duration in seconds"
+    )
+    parser.add_argument(
+        "--duration-minutes",
+        type=int,
+        default=None,
+        help="Timed cloud run duration in minutes (e.g. 1 for testing, 300 for 5-hour evening run). Bypasses IST idle sleep.",
     )
     parser.add_argument(
         "--interval", type=float, default=config.SNAPSHOT_INTERVAL, help="Polling interval in seconds"
@@ -59,9 +70,14 @@ def main():
     main_script = root_dir / "src" / "main.py"
     monitor_script = root_dir / "monitor" / "ram_monitor.py"
 
+    run_duration = args.duration
+    if args.duration_minutes is not None:
+        run_duration = args.duration_minutes * 60
+        print(f"[Launcher] Timed Cloud Mode: {args.duration_minutes}m run ({run_duration}s) | Bypassing IST idle window")
+
     print("=" * 70)
     print("Launching Delta Multi-Instrument Scanner Coordinator")
-    print(f"Mode: {args.mode.upper()} | Underlyings: {args.underlyings} | Duration: {args.duration}s | Sink: {args.sink.upper()}")
+    print(f"Mode: {args.mode.upper()} | Underlyings: {args.underlyings} | Duration: {run_duration}s | Sink: {args.sink.upper()}")
     print("=" * 70)
 
     collector_cmd = [
@@ -69,13 +85,16 @@ def main():
         str(main_script),
         "--mode", str(args.mode),
         "--underlyings", str(args.underlyings),
+        "--symbols", str(args.symbols),
         "--symbol", str(args.symbol),
         "--budget", str(args.budget),
-        "--duration", str(args.duration),
+        "--duration", str(run_duration),
         "--interval", str(args.interval),
         "--depth", str(args.depth),
         "--sink", str(args.sink),
     ]
+    if args.duration_minutes is not None:
+        collector_cmd.extend(["--duration-minutes", str(args.duration_minutes)])
 
     # 1. Start Main Collector
     collector_proc = subprocess.Popen(collector_cmd)

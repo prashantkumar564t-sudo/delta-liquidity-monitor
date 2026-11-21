@@ -1,7 +1,6 @@
 import unittest
-from datetime import date, datetime, time, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
 
 from src.instruments import InstrumentDiscovery
 
@@ -26,7 +25,7 @@ class TestInstrumentDiscovery(unittest.TestCase):
 
     def test_classify_dte_before_12_utc(self):
         # 14 Nov 2026 10:00 UTC (before 12:00 UTC settlement)
-        now = datetime(2026, 11, 14, 10, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 11, 14, 10, 0, tzinfo=UTC)
 
         self.assertEqual(self.discovery.classify_dte(date(2026, 11, 14), current_utc=now), "0-DTE")
         self.assertEqual(self.discovery.classify_dte(date(2026, 11, 15), current_utc=now), "1-DTE")
@@ -37,7 +36,7 @@ class TestInstrumentDiscovery(unittest.TestCase):
 
     def test_classify_dte_after_12_utc(self):
         # 14 Nov 2026 13:00 UTC (after 12:00 UTC settlement)
-        now = datetime(2026, 11, 14, 13, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 11, 14, 13, 0, tzinfo=UTC)
 
         # 14 Nov option already expired at 12:00 UTC
         self.assertIsNone(self.discovery.classify_dte(date(2026, 11, 14), current_utc=now))
@@ -59,16 +58,16 @@ class TestInstrumentDiscovery(unittest.TestCase):
         )
 
         # 68000 is closest to 68100.50
-        self.assertEqual(atm_strike, Decimal("68000"))
+        self.assertEqual(atm_strike, Decimal(68000))
         # 2 strikes below, ATM, 2 strikes above = [66000, 67000, 68000, 69000, 70000]
         self.assertEqual(
             selected,
-            [Decimal("66000"), Decimal("67000"), Decimal("68000"), Decimal("69000"), Decimal("70000")]
+            [Decimal(66000), Decimal(67000), Decimal(68000), Decimal(69000), Decimal(70000)]
         )
         self.assertEqual(len(filtered), 5)
 
     def test_discover_instruments_mocked(self):
-        now = datetime(2026, 11, 14, 10, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 11, 14, 10, 0, tzinfo=UTC)
         fake_tickers = [
             {
                 "symbol": "BTCUSD",
@@ -114,7 +113,7 @@ class TestInstrumentDiscovery(unittest.TestCase):
         self.assertIn("0-DTE", btc_res["expiries"])
 
         dte0 = btc_res["expiries"]["0-DTE"]
-        self.assertEqual(dte0["atm_strike"], Decimal("67000"))
+        self.assertEqual(dte0["atm_strike"], Decimal(67000))
         self.assertEqual(len(dte0["calls"]), 1)
         self.assertEqual(len(dte0["puts"]), 1)
 

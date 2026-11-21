@@ -2,20 +2,26 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.ruff_cache/
 
 # Virtual environments
 .venv/
 venv/
 env/
 
-# Runtime data
+# Runtime data & databases
 data/raw/*
 data/analysis/*
 data/*.db*
 *.db
 *.db-wal
 *.db-shm
+*.duckdb*
 logs/*
+
+# Exports (ZSTD Parquet)
+exports/*.parquet
+!exports/.gitkeep
 
 # Keep folder structure
 !data/raw/.gitkeep
@@ -23,9 +29,10 @@ logs/*
 !logs/.gitkeep
 
 # Environment and secrets
-.env
-.env.*
+.env*
 !.env.example
+.clasprc.json
+.clasp.json
 
 # IDE settings
 .vscode/

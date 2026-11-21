@@ -19,7 +19,7 @@ def bundle_project(root_dir="."):
             for f in files:
                 if not any(f.endswith(ext) for ext in EXCLUDE_EXTS):
                     outfile.write(f"{sub_indent}{f}\n")
-        
+
         outfile.write("\n" + "="*40 + "\n\n")
 
         # 2. अब हर फाइल का पाथ और उसका कोड लिखें
@@ -30,10 +30,10 @@ def bundle_project(root_dir="."):
                     continue
                 file_path = os.path.join(root, file)
                 rel_path = os.path.relpath(file_path, root_dir)
-                
+
                 outfile.write(f"--- START FILE: {rel_path} ---\n")
                 try:
-                    with open(file_path, "r", encoding="utf-8", errors="ignore") as infile:
+                    with open(file_path, encoding="utf-8", errors="ignore") as infile:
                         outfile.write(infile.read())
                 except Exception as e:
                     outfile.write(f"Error reading file: {e}")

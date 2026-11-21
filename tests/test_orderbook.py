@@ -1,5 +1,6 @@
 import unittest
 from decimal import Decimal
+
 from src.orderbook import OrderBookAnalyzer
 
 
@@ -21,7 +22,7 @@ class TestOrderBookAnalyzer(unittest.TestCase):
 
     def test_basic_metrics(self):
         result = self.analyzer.analyze(self.sample_orderbook)
-        self.assertEqual(result["best_bid"], Decimal("100"))
+        self.assertEqual(result["best_bid"], Decimal(100))
         self.assertEqual(result["best_ask"], Decimal("100.5"))
         self.assertEqual(result["spread"], Decimal("0.5"))
         self.assertEqual(result["mid_price"], Decimal("100.25"))
@@ -35,7 +36,7 @@ class TestOrderBookAnalyzer(unittest.TestCase):
         imbalance = result["imbalance"]
         self.assertGreaterEqual(imbalance, Decimal("-1.0"))
         self.assertLessEqual(imbalance, Decimal("1.0"))
-        expected_imbalance = Decimal("-10") / Decimal("70")
+        expected_imbalance = Decimal(-10) / Decimal(70)
         self.assertEqual(imbalance, expected_imbalance)
 
     def test_executable_lots_within_slippage(self):

@@ -3,11 +3,11 @@ monitor/ram_monitor.py
 Tracks RAM of target process using Standard Library only (Windows-safe).
 """
 
+import csv
+import os
 import sys
 import time
-import os
-import csv
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -68,7 +68,7 @@ def get_process_memory_mb(pid):
             ctypes.windll.kernel32.CloseHandle(handle)
             return counters.WorkingSetSize / (1024 * 1024)
         else:
-            with open(f"/proc/{pid}/status", "r") as f:
+            with open(f"/proc/{pid}/status") as f:
                 for line in f:
                     if line.startswith("VmRSS:"):
                         return float(line.split()[1]) / 1024.0
@@ -97,11 +97,10 @@ def monitor(target_pid, interval=1.0):
                     break
 
                 mem = get_process_memory_mb(target_pid)
-                if mem > peak_memory:
-                    peak_memory = mem
+                peak_memory = max(peak_memory, mem)
 
                 writer.writerow([
-                    datetime.now(timezone.utc).isoformat(),
+                    datetime.now(UTC).isoformat(),
                     target_pid,
                     f"{mem:.2f}",
                     f"{peak_memory:.2f}"

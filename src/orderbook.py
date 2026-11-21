@@ -32,8 +32,8 @@ class OrderBookAnalyzer:
         best_ask = Decimal(str(asks[0]["price"]))
         best_bid = Decimal(str(bids[0]["price"]))
 
-        max_ask_price = best_ask * (Decimal("1") + max_slippage_pct)
-        min_bid_price = best_bid * (Decimal("1") - max_slippage_pct)
+        max_ask_price = best_ask * (Decimal(1) + max_slippage_pct)
+        min_bid_price = best_bid * (Decimal(1) - max_slippage_pct)
 
         executable_buy_lots = sum(
             int(level["size"]) for level in asks
@@ -67,9 +67,9 @@ class OrderBookAnalyzer:
         if best_ask <= best_bid:
             raise ValueError("Crossed or zero-spread order book detected")
 
-        mid_price = (best_bid + best_ask) / Decimal("2")
+        mid_price = (best_bid + best_ask) / Decimal(2)
         spread = best_ask - best_bid
-        spread_percent = (spread / mid_price) * Decimal("100")
+        spread_percent = (spread / mid_price) * Decimal(100)
 
         bid_contracts = sum(int(level["size"]) for level in bids)
         ask_contracts = sum(int(level["size"]) for level in asks)
@@ -84,7 +84,7 @@ class OrderBookAnalyzer:
 
         imbalance = (
             Decimal(str(bid_contracts - ask_contracts)) / Decimal(str(total_depth))
-            if total_depth else Decimal("0")
+            if total_depth else Decimal(0)
         )
 
         executable_info = self.compute_executable_lots(orderbook, max_slippage_pct=max_slippage_pct)

@@ -1,5 +1,4 @@
 import asyncio
-import json
 import time
 import unittest
 from decimal import Decimal
@@ -88,13 +87,13 @@ class TestDeltaWebSocket(unittest.TestCase):
         client.apply_delta(delta)
 
         # 89990 must be deleted
-        self.assertNotIn(Decimal("89990"), client.bids)
+        self.assertNotIn(Decimal(89990), client.bids)
         # 90000 updated to 5
-        self.assertEqual(client.bids[Decimal("90000")], 5)
+        self.assertEqual(client.bids[Decimal(90000)], 5)
         # 89995 added with 12
-        self.assertEqual(client.bids[Decimal("89995")], 12)
+        self.assertEqual(client.bids[Decimal(89995)], 12)
         # 90010 updated to 20
-        self.assertEqual(client.asks[Decimal("90010")], 20)
+        self.assertEqual(client.asks[Decimal(90010)], 20)
 
         # Query orderbook
         book, source = client.get_orderbook(depth=5)

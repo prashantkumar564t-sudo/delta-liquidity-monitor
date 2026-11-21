@@ -15,7 +15,6 @@ import threading
 import time
 import urllib.parse
 from decimal import Decimal
-from typing import Dict, Optional, Tuple
 
 from src import config
 from src.delta_api import DeltaAPI
@@ -56,7 +55,7 @@ class WebSocketFrame:
         return bytes(header) + payload
 
     @staticmethod
-    async def read_frame(reader: asyncio.StreamReader) -> Tuple[int, bytes]:
+    async def read_frame(reader: asyncio.StreamReader) -> tuple[int, bytes]:
         """Read and decode one RFC 6455 frame from the stream."""
         head = await reader.readexactly(2)
         b0, b1 = head[0], head[1]
@@ -94,7 +93,7 @@ class DeltaWebSocketClient:
         symbol: str = config.SYMBOL,
         ws_url: str = config.WS_URL,
         fallback_timeout: float = config.WS_TIMEOUT_SECONDS,
-        rest_api: Optional[DeltaAPI] = None,
+        rest_api: DeltaAPI | None = None,
     ):
         self.symbol = symbol
         self.ws_url = ws_url
@@ -102,17 +101,17 @@ class DeltaWebSocketClient:
         self.rest_api = rest_api or DeltaAPI(timeout=config.API_TIMEOUT)
 
         self._lock = threading.Lock()
-        self.bids: Dict[Decimal, int] = {}
-        self.asks: Dict[Decimal, int] = {}
+        self.bids: dict[Decimal, int] = {}
+        self.asks: dict[Decimal, int] = {}
 
         self.last_tick_time: float = 0.0
-        self.last_exchange_time: Optional[int] = None
+        self.last_exchange_time: int | None = None
         self.is_connected: bool = False
         self.is_synced: bool = False
         self.running: bool = False
 
-        self._thread: Optional[threading.Thread] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._thread: threading.Thread | None = None
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     def apply_snapshot(self, payload: dict):
         """Replace internal order book with a full L2 snapshot."""
@@ -167,7 +166,7 @@ class DeltaWebSocketClient:
                 self.last_exchange_time = payload["timestamp"]
             self.is_synced = bool(self.bids and self.asks)
 
-    def get_orderbook(self, depth: int = config.DEPTH) -> Tuple[dict, str]:
+    def get_orderbook(self, depth: int = config.DEPTH) -> tuple[dict, str]:
         """
         Get latest L2 orderbook snapshot.
         Returns: (orderbook_dict, source_str: 'websocket' | 'rest_fallback')
@@ -309,7 +308,7 @@ class DeltaWebSocketClient:
 
         # Delta order book messages
         if msg_type in ("snapshot", "v2/l2orderbook") or (
-            channel == "l2_orderbook" and "buy" in msg and "sell" in msg and not msg.get("action") == "update"
+            channel == "l2_orderbook" and "buy" in msg and "sell" in msg and msg.get("action") != "update"
         ):
             self.apply_snapshot(msg)
         elif msg_type in ("l2_updates", "update") or (

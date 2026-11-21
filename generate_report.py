@@ -9,10 +9,8 @@ Supports:
 
 import argparse
 import csv
-import json
 import sqlite3
 from datetime import datetime
-from decimal import Decimal
 from pathlib import Path
 
 
@@ -27,7 +25,7 @@ def parse_iso(ts_str):
     if not ts_str:
         return None
     try:
-        return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+        return datetime.fromisoformat(ts_str)
     except Exception:
         return None
 
@@ -159,7 +157,7 @@ def print_chain_scan_report(chain_records: list, resource_file: Path):
     print("=" * 105)
 
     # Group latest rows by underlying
-    underlyings = sorted(list(set(r["underlying"] for r in chain_records)))
+    underlyings = sorted({r["underlying"] for r in chain_records})
 
     for asset in underlyings:
         asset_rows = [r for r in chain_records if r["underlying"] == asset]
@@ -268,7 +266,7 @@ def generate_summary(source="auto"):
                 sell_slippages.append(float(sims["sell_taker"]["slippage_percent"]))
 
     print("=" * 68)
-    print(f"      DELTA EXCHANGE LIQUIDITY & TELEMETRY REPORT")
+    print("      DELTA EXCHANGE LIQUIDITY & TELEMETRY REPORT")
     print(f"      Data Source: {data_source_label}")
     print("=" * 68)
     print(f"Snapshots in Session     : {len(records)} | Duration: {duration_str}")

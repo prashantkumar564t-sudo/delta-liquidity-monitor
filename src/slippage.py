@@ -1,4 +1,4 @@
-from decimal import Decimal, ROUND_FLOOR
+from decimal import ROUND_FLOOR, Decimal
 
 
 class SlippageCalculator:
@@ -33,7 +33,7 @@ class SlippageCalculator:
 
         remaining_usd = budget
         executed_contracts = 0
-        executed_notional = Decimal("0")
+        executed_notional = Decimal(0)
         executed_levels = 0
 
         for level in levels:
@@ -79,7 +79,7 @@ class SlippageCalculator:
         else:
             slippage = best_price - average_price
 
-        slippage_percent = (slippage / best_price) * Decimal("100")
+        slippage_percent = (slippage / best_price) * Decimal(100)
         fee = executed_notional * self.taker_fee
 
         return {
@@ -179,11 +179,11 @@ class SlippageCalculator:
             "executed_notional_usd": notional_usd,
             "average_execution_price": price,
             "best_price": best_target_price,
-            "slippage_usd": Decimal("0"),
-            "slippage_percent": Decimal("0"),
+            "slippage_usd": Decimal(0),
+            "slippage_percent": Decimal(0),
             "maker_fee_usd": fee_usd,
             "fee_usd": fee_usd,
-            "unfilled_usd": Decimal("0"),
+            "unfilled_usd": Decimal(0),
             "fully_executed": True,
             "levels_used": 1,
             "queue_depth_ahead": queue_depth_ahead,

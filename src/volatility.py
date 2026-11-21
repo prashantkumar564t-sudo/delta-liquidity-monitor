@@ -7,7 +7,6 @@ Lot-Level Liquidity and Volatility Analytics for Delta Exchange:
 
 from collections import deque
 from decimal import Decimal
-from typing import Dict, List, Optional
 
 
 class OptionsVolatilityEngine:
@@ -30,9 +29,9 @@ class OptionsVolatilityEngine:
         Analyze ATM Call/Put IV, straddle pricing, and aggregate lot liquidity
         across all ATM ± 5 strikes in the expiry bucket.
         """
-        calls: List[dict] = expiry_meta.get("calls", [])
-        puts: List[dict] = expiry_meta.get("puts", [])
-        atm_strike: Decimal = expiry_meta.get("atm_strike", Decimal("0"))
+        calls: list[dict] = expiry_meta.get("calls", [])
+        puts: list[dict] = expiry_meta.get("puts", [])
+        atm_strike: Decimal = expiry_meta.get("atm_strike", Decimal(0))
         expiry_str: str = expiry_meta.get("expiry_str", "")
 
         # 1. Lot-level liquidity aggregation across all strikes in bucket
@@ -57,7 +56,7 @@ class OptionsVolatilityEngine:
 
         lot_imbalance = (
             Decimal(str(total_bids - total_asks)) / Decimal(str(total_lots))
-            if total_lots > 0 else Decimal("0")
+            if total_lots > 0 else Decimal(0)
         )
 
         # 2. Extract ATM Call and Put instruments
@@ -83,7 +82,7 @@ class OptionsVolatilityEngine:
         put_mark_iv = get_mark_iv(atm_put)
 
         if call_mark_iv > 0 and put_mark_iv > 0:
-            mean_atm_iv = (call_mark_iv + put_mark_iv) / Decimal("2")
+            mean_atm_iv = (call_mark_iv + put_mark_iv) / Decimal(2)
         elif call_mark_iv > 0:
             mean_atm_iv = call_mark_iv
         else:
@@ -99,8 +98,8 @@ class OptionsVolatilityEngine:
 
         straddle_premium_usd = call_mark_price + put_mark_price
         expected_move_pct = (
-            (straddle_premium_usd / spot_price) * Decimal("100")
-            if spot_price > 0 else Decimal("0")
+            (straddle_premium_usd / spot_price) * Decimal(100)
+            if spot_price > 0 else Decimal(0)
         )
 
         return {
@@ -145,8 +144,8 @@ class RollingRealizedVolatility:
         if n < 2:
             return {
                 "rv_sample_count": n,
-                "rv_intraday_pct": Decimal("0"),
-                "rv_annualized_pct": Decimal("0"),
+                "rv_intraday_pct": Decimal(0),
+                "rv_annualized_pct": Decimal(0),
                 "avg_spread": spread,
                 "spread_expansion_ratio": Decimal("1.0"),
                 "spread_shock": False,
@@ -164,8 +163,8 @@ class RollingRealizedVolatility:
         if not returns:
             return {
                 "rv_sample_count": n,
-                "rv_intraday_pct": Decimal("0"),
-                "rv_annualized_pct": Decimal("0"),
+                "rv_intraday_pct": Decimal(0),
+                "rv_annualized_pct": Decimal(0),
                 "avg_spread": spread,
                 "spread_expansion_ratio": Decimal("1.0"),
                 "spread_shock": False,
@@ -174,10 +173,10 @@ class RollingRealizedVolatility:
         num_returns = Decimal(str(len(returns)))
         mean_ret = sum(returns) / num_returns
 
-        variance = sum((r - mean_ret) ** 2 for r in returns) / (num_returns if num_returns == 1 else (num_returns - Decimal("1")))
+        variance = sum((r - mean_ret) ** 2 for r in returns) / (num_returns if num_returns == 1 else (num_returns - Decimal(1)))
         std_dev = variance.sqrt()
 
-        rv_intraday_pct = std_dev * Decimal("100")
+        rv_intraday_pct = std_dev * Decimal(100)
         rv_annualized_pct = rv_intraday_pct * self.annualization_factor
 
         # Spread shock calculation

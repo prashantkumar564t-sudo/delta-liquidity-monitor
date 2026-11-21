@@ -1,5 +1,6 @@
 import unittest
 from decimal import Decimal
+
 from src.slippage import SlippageCalculator
 
 
@@ -35,13 +36,13 @@ class TestSlippageCalculator(unittest.TestCase):
                 self.assertEqual(result["order_type"], "taker")
                 self.assertEqual(result["executed_contracts"], 20)
                 self.assertLessEqual(result["executed_notional_usd"], Decimal("2.05"))
-                self.assertGreaterEqual(result["unfilled_usd"], Decimal("0"))
+                self.assertGreaterEqual(result["unfilled_usd"], Decimal(0))
                 # Conservation law: executed_notional + unfilled == requested
                 self.assertEqual(
                     result["executed_notional_usd"] + result["unfilled_usd"],
                     result["requested_usd"]
                 )
-                self.assertGreaterEqual(result["taker_fee_usd"], Decimal("0"))
+                self.assertGreaterEqual(result["taker_fee_usd"], Decimal(0))
 
     def test_zero_or_negative_order_size_raises(self):
         with self.assertRaises(ValueError):
@@ -65,7 +66,7 @@ class TestSlippageCalculator(unittest.TestCase):
         )
         self.assertEqual(res["order_type"], "maker")
         self.assertEqual(res["executed_contracts"], 5)
-        self.assertEqual(res["slippage_usd"], Decimal("0"))
+        self.assertEqual(res["slippage_usd"], Decimal(0))
         # FIFO queue depth ahead at best bid: 10 contracts already there
         self.assertEqual(res["queue_depth_ahead"], 10)
         # Notional = 100 * 5 * 0.001 = 0.50 USD
