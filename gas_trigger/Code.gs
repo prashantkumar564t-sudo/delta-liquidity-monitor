@@ -73,12 +73,12 @@ function setupDaily6PMTrigger() {
     }
   });
 
-  // Create new daily trigger at 18:00 IST (nearHour 18)
+  // Create new daily trigger at 18:00 IST
   const newTrigger = ScriptApp.newTrigger(functionName)
     .timeBased()
     .everyDays(1)
     .atHour(18)
-    .nearHour(18)
+    .nearMinute(0)
     .inTimezone("Asia/Kolkata")
     .create();
 
