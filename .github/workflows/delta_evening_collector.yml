@@ -58,7 +58,7 @@ jobs:
         id: drive_check
         run: |
           if [ -d "./exports" ] && [ "$(ls -A ./exports/*.parquet 2>/dev/null)" ]; then
-            if rclone check ./exports gdrive:00_MASTER_WORKSPACE/02_DATA/Delta_Options/ --one-way --size-only; then
+            if rclone check ./exports gdrive:00_MASTER_WORKSPACE/02_DATA/Delta_Options/ --include "*.parquet" --one-way --size-only; then
               echo "DRIVE_STATUS=Verified & Synced" >> $GITHUB_ENV
             else
               echo "DRIVE_STATUS=Discrepancy Detected" >> $GITHUB_ENV
